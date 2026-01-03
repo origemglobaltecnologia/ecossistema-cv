@@ -1,19 +1,27 @@
+require('dotenv').config(); // Carrega as variáveis do .env
 const amqp = require('amqplib');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 
-const CLOUD_AMQP_URL = 'amqps://ozzqvboe:HC7qH-SL9VjJgcuAxws8py-t-FlofO-n@jackal.rmq.cloudamqp.com/ozzqvboe';
+// Configurações obtidas via Variáveis de Ambiente
+const CLOUD_AMQP_URL = process.env.AMQP_URL;
 
 const transportador = nodemailer.createTransport({
-  host: "sandbox.smtp.mailtrap.io",
-  port: 2525,
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
   auth: {
-    user: "fa61b5e9624d68",
-    pass: "71d21bbed66442"
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
 async function iniciarWorker() {
+    // Validação de segurança básica
+    if (!CLOUD_AMQP_URL || !process.env.EMAIL_USER) {
+        console.error("[❌] Erro: Variáveis de ambiente não configuradas no .env");
+        process.exit(1);
+    }
+
     try {
         const conexao = await amqp.connect(CLOUD_AMQP_URL);
         const canal = await conexao.createChannel();
@@ -22,21 +30,22 @@ async function iniciarWorker() {
         await canal.assertQueue('fila_logs', { durable: true });
 
         canal.prefetch(1);
-        console.log("[-] Worker pronto para enviar currículos com anexos...");
+        console.log("[-] Worker pronto e operando com variáveis de ambiente...");
 
         canal.consume('fila_envios', async (msg) => {
+            if (!msg) return;
+            
             const dados = JSON.parse(msg.content.toString());
             console.log(`[📩] Processando envio para: ${dados.nome}`);
 
             try {
                 const mailOptions = {
-                    from: '"Seu Nome" <seu-email@exemplo.com>',
+                    from: '"Seu Portfólio" <noreply@exemplo.com>',
                     to: dados.email,
                     subject: `Candidatura: ${dados.vaga}`,
                     text: `Olá ${dados.nome}, segue meu currículo em anexo.`,
                 };
 
-                // Verifica se existe um caminho de anexo enviado pelo formulário
                 if (dados.caminhoAnexo && fs.existsSync(dados.caminhoAnexo)) {
                     mailOptions.attachments = [{
                         filename: dados.nomeAnexo || 'curriculo.pdf',
@@ -47,7 +56,6 @@ async function iniciarWorker() {
                 await transportador.sendMail(mailOptions);
                 console.log(`[✅] E-mail enviado com sucesso para ${dados.nome}`);
 
-                // Envia para o Logger
                 const logMsg = JSON.stringify({
                     empresa: dados.nome,
                     status: 'SUCESSO',
@@ -55,7 +63,6 @@ async function iniciarWorker() {
                 });
                 canal.sendToQueue('fila_logs', Buffer.from(logMsg));
 
-                // Remove o arquivo temporário do Termux após o envio para não encher a memória
                 if (dados.caminhoAnexo && fs.existsSync(dados.caminhoAnexo)) {
                     fs.unlinkSync(dados.caminhoAnexo);
                 }
@@ -63,6 +70,7 @@ async function iniciarWorker() {
                 canal.ack(msg);
             } catch (err) {
                 console.error(`[❌] Erro ao processar ${dados.nome}:`, err.message);
+                // Reenfileira a mensagem em caso de erro
                 setTimeout(() => canal.nack(msg), 5000);
             }
         });
@@ -72,3 +80,4 @@ async function iniciarWorker() {
 }
 
 iniciarWorker();
+

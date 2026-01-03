@@ -1,3 +1,4 @@
+require('dotenv').config(); // Carrega as variáveis de ambiente do arquivo .env
 const express = require('express');
 const bodyParser = require('body-parser');
 const amqp = require('amqplib');
@@ -6,12 +7,13 @@ const path = require('path');
 const multer = require('multer');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' }); // Pasta temporária para currículos
+const upload = multer({ dest: 'uploads/' });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-const CLOUD_AMQP_URL = 'amqps://ozzqvboe:HC7qH-SL9VjJgcuAxws8py-t-FlofO-n@jackal.rmq.cloudamqp.com/ozzqvboe';
+// URL agora obtida de forma segura via variável de ambiente
+const CLOUD_AMQP_URL = process.env.AMQP_URL;
 
 app.get('/status', (req, res) => {
     const logPath = path.join(__dirname, 'relatorio_envios.txt');
@@ -23,11 +25,14 @@ app.get('/status', (req, res) => {
     }
 });
 
-// Rota atualizada para aceitar o PDF (campo 'curriculo')
 app.post('/enviar', upload.single('curriculo'), async (req, res) => {
     const { nome, email, vaga } = req.body;
     const arquivoPath = req.file ? req.file.path : null;
     const arquivoNome = req.file ? req.file.originalname : null;
+
+    if (!CLOUD_AMQP_URL) {
+        return res.status(500).send('Erro: Configuração AMQP_URL não encontrada no servidor.');
+    }
 
     try {
         const conexao = await amqp.connect(CLOUD_AMQP_URL);
@@ -47,9 +52,10 @@ app.post('/enviar', upload.single('curriculo'), async (req, res) => {
         setTimeout(() => { conexao.close(); }, 500);
         res.redirect('/');
     } catch (err) {
-        res.status(500).send('Erro: ' + err.message);
+        res.status(500).send('Erro de Conexão: ' + err.message);
     }
 });
 
-app.listen(3000, () => console.log('🌐 Dashboard com Upload em http://localhost:3000'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🌐 Dashboard rodando em http://localhost:${PORT}`));
 

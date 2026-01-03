@@ -1,7 +1,29 @@
+# ###########################################################
+# ECOSSISTEMA-CV | Repository Rules
+# ###########################################################
+
+# Environment & Credentials
+# Prevents accidental leak of CloudAMQP/Mailtrap credentials
+.env
+.env.local
+
+# Dependency Management
+# Managed via npm install; excluded to keep repository lightweight
 node_modules/
 package-lock.json
+
+# Storage & Temporary Files
+# Ignore specific uploads but preserve directory structure via .gitkeep
 uploads/*
 !uploads/.gitkeep
+
+# Runtime Logs & Reports
+# Local execution artifacts and application-generated reports
 *.log
 relatorio_envios.txt
+npm-debug.log*
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
 
