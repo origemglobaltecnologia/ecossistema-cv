@@ -1,0 +1,28 @@
+{
+  "name": "ecossistema-cv",
+  "version": "1.0.0",
+  "description": "Ecossistema de envio de currículos com RabbitMQ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/origemglobaltecnologia/ecossistema-cv.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/origemglobaltecnologia/ecossistema-cv/issues"
+  },
+  "homepage": "https://github.com/origemglobaltecnologia/ecossistema-cv#readme",
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "body-parser": "^2.2.1",
+    "express": "^5.2.1",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.12"
+  }
+}

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Candidaturas</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #e9ecef; color: #333; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #007bff; font-size: 1.5rem; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9rem; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        input[type="file"] { background: #f8f9fa; border: 1px dashed #adb5bd; }
+        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #218838; }
+        .log-item { background: #fff; border-left: 5px solid #28a745; padding: 12px; margin: 8px 0; font-size: 0.85rem; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .status-sucesso { font-weight: bold; color: #28a745; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            <h2>🚀 Enviar Currículo</h2>
+            <form action="/enviar" method="POST" enctype="multipart/form-data">
+                <input type="text" name="nome" placeholder="Nome da Empresa" required>
+                <input type="email" name="email" placeholder="E-mail do RH" required>
+                <input type="text" name="vaga" placeholder="Vaga (ex: Dev Node.js)" required>
+                
+                <label>Seu Currículo (PDF):</label>
+                <input type="file" name="curriculo" accept=".pdf" required>
+                
+                <button type="submit">Enviar Agora</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>📊 Histórico de Envios</h2>
+            <div id="listaLogs">Carregando histórico...</div>
+        </div>
+    </div>
+
+    <script>
+        async function carregarLogs() {
+            try {
+                const response = await fetch('/status');
+                const logs = await response.json();
+                const container = document.getElementById('listaLogs');
+                
+                if (logs.length === 0 || logs[0].includes("Nenhum")) {
+                    container.innerHTML = "<p style='color: #666;'>Nenhum envio registrado.</p>";
+                    return;
+                }
+
+                container.innerHTML = logs.reverse().map(log => {
+                    // Formata a linha de log para ficar mais limpa
+                    return `<div class="log-item">${log.replace('| STATUS: SUCESSO', ' | <span class="status-sucesso">ENVIADO ✅</span>')}</div>`;
+                }).join('');
+            } catch (e) {
+                console.error("Erro ao carregar logs", e);
+            }
+        }
+
+        // Atualiza a lista ao carregar e a cada 5 segundos
+        carregarLogs();
+        setInterval(carregarLogs, 5000);
+    </script>
+</body>
+</html>
+
