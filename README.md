@@ -66,4 +66,17 @@ npm install
 ​[ ] Criar interface visual para monitoramento em tempo real dos workers.
 ​© 2024 - Desenvolvido por [Cristiano/Origem Global Tecnologia]
 
+# --- Configuração do RabbitMQ (CloudAMQP ou Local) ---
+# Substitua pela sua URL completa fornecida pelo CloudAMQP
+AMQP_URL=amqps://usuario:senha@instancia.rmq.cloudamqp.com/vhost
+
+# --- Configuração de E-mail (Gmail) ---
+# Use 'smtp.gmail.com' para o Gmail
+EMAIL_HOST=smtp.gmail.com
+# Porta 465 recomendada para conexões seguras (SSL)
+EMAIL_PORT=465
+# Seu endereço de e-mail completo
+EMAIL_USER=seu-email@gmail.com
+# Senha de App gerada na sua conta Google (não use sua senha real)
+EMAIL_PASS=abcd efgh ijkl mnop
 
