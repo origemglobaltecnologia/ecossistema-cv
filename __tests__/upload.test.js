@@ -1,18 +1,29 @@
+/**
+ * @file upload.test.js
+ * @description Testes de integração para o fluxo de upload e mensageria.
+ * Valida desde a recepção de arquivos pelo Multer até o despacho para a fila RabbitMQ.
+ */
+
 const request = require('supertest');
 const amqp = require('amqplib');
 const fs = require('fs');
 const path = require('path');
 
-// 1. Criamos o Mock ANTES de importar o app para interceptar a conexão RabbitMQ
+/** * @description Mock do AMQP: Intercepta a conexão com o RabbitMQ.
+ * Essencial para rodar testes em ambientes sem internet ou sem o Broker ativo.
+ */
 jest.mock('amqplib');
 
-// 2. Importamos o app e o server após o mock
+// Importação do app e server reais após a definição do mock
 const { app, server } = require('../server');
 
-describe('Fluxo de Candidatura (Upload)', () => {
+describe('Fluxo de Candidatura (Upload & AMQP)', () => {
 
+  /**
+   * @description Configuração prévia dos Mocks.
+   * Define o comportamento esperado para a conexão, canal e filas.
+   */
   beforeAll(() => {
-    // Forçamos o amqplib a fingir que conectou com sucesso durante os testes
     amqp.connect.mockResolvedValue({
       createChannel: jest.fn().mockResolvedValue({
         assertQueue: jest.fn().mockResolvedValue(true),
@@ -22,16 +33,35 @@ describe('Fluxo de Candidatura (Upload)', () => {
     });
   });
 
+  /**
+   * @description Limpeza pós-teste.
+   * Encerra o servidor e remove qualquer arquivo residual para manter o ambiente limpo.
+   */
   afterAll(async () => {
-    // Fecha o servidor para o Jest não deixar processos pendentes
+    // 1. Encerra a escuta da porta para liberar o processo do Jest
     await server.close();
-    
-    // Limpeza: remove arquivo de teste residual se existir
+
+    // 2. Faxina na pasta uploads: Remove arquivos criados pelo Multer durante os testes
+    const uploadsDir = path.join(__dirname, '../uploads');
+    if (fs.existsSync(uploadsDir)) {
+      const files = fs.readdirSync(uploadsDir);
+      for (const file of files) {
+        if (file !== '.gitkeep') {
+          fs.unlinkSync(path.join(uploadsDir, file));
+        }
+      }
+    }
+
+    // 3. Remove o arquivo de buffer usado para o teste de attach
     const tempFile = path.join(__dirname, 'test-cv.txt');
     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
   });
 
-  it('Deve retornar erro 400 se tentar enviar sem arquivo', async () => {
+  /**
+   * @test Validação de Erro 400
+   * Objetivo: Garantir que o servidor rejeite requisições sem o arquivo obrigatório.
+   */
+  it('Deve retornar erro 400 se tentar enviar o formulário sem o arquivo', async () => {
     const res = await request(app)
       .post('/enviar')
       .send({ nome: 'Teste', email: 'teste@exemplo.com' });
@@ -39,16 +69,27 @@ describe('Fluxo de Candidatura (Upload)', () => {
     expect(res.statusCode).toEqual(400);
   });
 
-  it('Deve carregar a página inicial', async () => {
+  /**
+   * @test Acessibilidade da Rota Raiz
+   */
+  it('Deve carregar a página inicial (Dashboard) com sucesso', async () => {
     const res = await request(app).get('/');
     expect(res.statusCode).toBe(200);
   });
 
-  // TESTE DE SUCESSO: Simula o envio de um arquivo real
-  it('Deve aceitar o envio quando um arquivo for anexado corretamente', async () => {
+  /**
+   * @test Integração de Sucesso (Upload + Fila)
+   * Objetivo: Simular um envio completo de formulário multipart e verificar a integração.
+   */
+  it('Deve processar o upload e retornar OK quando o arquivo for anexado corretamente', async () => {
+    // Criação de um arquivo físico temporário para o teste
     const filePath = path.join(__dirname, 'test-cv.txt');
-    fs.writeFileSync(filePath, 'Conteúdo fictício para teste de upload.');
+    fs.writeFileSync(filePath, 'Conteúdo fictício para validação de stream de arquivo.');
 
+    /**
+     * Usamos .field() para dados de texto e .attach() para arquivos,
+     * simulando exatamente o comportamento de um formulário HTML5.
+     */
     const res = await request(app)
       .post('/enviar')
       .field('nome', 'Candidato Teste')
@@ -56,12 +97,12 @@ describe('Fluxo de Candidatura (Upload)', () => {
       .field('vaga', 'Engenheiro de Dados')
       .attach('curriculo', filePath);
 
-    // Valida se o servidor respondeu 200 OK (comportamento para ambiente de teste)
+    // Verifica o status 200 (sucesso) e a mensagem configurada no server.js para testes
     expect(res.statusCode).toBe(200);
     expect(res.body.message).toBe('OK');
 
-    // Remove o arquivo temporário após o uso
-    fs.unlinkSync(filePath);
+    // Higiene imediata: remove o arquivo de teste local
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   });
 });
 
