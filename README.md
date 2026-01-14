@@ -103,6 +103,19 @@ npm run logger
 
 ---
 
+
+
+### ▶️ Inicialização automática com `iniciar.sh` (opcional)
+
+Para iniciar **todos os módulos do sistema automaticamente** (Dashboard, Worker SMTP e Logger), utilize o script:
+
+```bash
+chmod +x iniciar.sh
+./iniciar.sh
+```
+
+O script executará todos os serviços necessários em sequência.
+
 ## 📊 Monitoramento
 
 - Endpoint de status:
@@ -154,7 +167,6 @@ uploads/*
 ## 👨‍💻 Autor
 
 **Cristiano Origem Camejo**  
-🌐 https://origemoficial.com.br  
 📂 https://github.com/origemglobaltecnologia
 
 ---
