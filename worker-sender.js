@@ -14,7 +14,7 @@ const CLOUD_AMQP_URL = process.env.AMQP_URL;
 const transportador = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
-  secure: true, 
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -36,16 +36,19 @@ async function iniciarWorker() {
             if (!msg) return;
 
             const dados = JSON.parse(msg.content.toString());
-            
+
             try {
+                // Link atualizado conforme solicitado
+                const repoLink = "https://github.com/origemglobaltecnologia/ecosistema-cv-smtp.git";
+
                 // Montagem da mensagem profissional em HTML
                 const mailOptions = {
                     from: `"Cristiano Origem Camejo" <${process.env.EMAIL_USER}>`,
                     to: dados.email,
                     subject: `Em busca de oportunidade como ${dados.vaga} - ${dados.nome}`,
                     // Versão em texto simples (fallback)
-                    text: `Olá, este é um envio automático do currículo de ${dados.nome}. Em busca de oportunidade como ${dados.vaga}. Confira o projeto em: https://github.com/origemglobaltecnologia/ecossistema-cv`,
-                    // Versão HTML (o que a maioria dos clientes de e-mail verá)
+                    text: `Olá, este é um envio automático do currículo de ${dados.nome}. Em busca de oportunidade como ${dados.vaga}. Confira o projeto em: ${repoLink}`,
+                    // Versão HTML
                     html: `
                         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                             <h2 style="color: #2e7d32;">Em busca de oportunidade como ${dados.vaga}</h2>
@@ -54,7 +57,7 @@ async function iniciarWorker() {
                             <p>O sistema utilizado para este envio foi desenvolvido por mim como parte do meu <strong>portfólio Full Stack</strong>, utilizando Node.js, RabbitMQ e Microserviços.</p>
                             <hr style="border: 0; border-top: 1px solid #eee;" />
                             <p>Você pode conferir o código-fonte e a arquitetura deste sistema no meu GitHub:</p>
-                            <p><a href="https://github.com/origemglobaltecnologia/ecossistema-cv" style="background-color: #24292e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Ver Projeto no GitHub</a></p>
+                            <p><a href="${repoLink}" style="background-color: #24292e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Ver Projeto no GitHub</a></p>
                             <br />
                             <p>Atenciosamente,<br /><strong>${dados.nome}</strong></p>
                         </div>
@@ -91,6 +94,7 @@ async function iniciarWorker() {
 
             } catch (err) {
                 console.error(`[❌] Erro no envio:`, err.message);
+                // Nack com delay para evitar loop infinito imediato em caso de erro de rede/quota
                 setTimeout(() => canal.nack(msg), 10000);
             }
         });
