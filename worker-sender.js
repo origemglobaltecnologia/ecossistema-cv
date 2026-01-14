@@ -42,13 +42,13 @@ async function iniciarWorker() {
                 const mailOptions = {
                     from: `"Cristiano Origem Camejo" <${process.env.EMAIL_USER}>`,
                     to: dados.email,
-                    subject: `Candidatura: ${dados.vaga} - ${dados.nome}`,
+                    subject: `Em busca de oportunidade como ${dados.vaga} - ${dados.nome}`,
                     // Versão em texto simples (fallback)
-                    text: `Olá, este é um envio automático do currículo de ${dados.nome}. Vaga: ${dados.vaga}. Confira o projeto em: https://github.com/origemglobaltecnologia/ecossistema-cv`,
+                    text: `Olá, este é um envio automático do currículo de ${dados.nome}. Em busca de oportunidade como ${dados.vaga}. Confira o projeto em: https://github.com/origemglobaltecnologia/ecossistema-cv`,
                     // Versão HTML (o que a maioria dos clientes de e-mail verá)
                     html: `
                         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                            <h2 style="color: #2e7d32;">Candidatura para a vaga: ${dados.vaga}</h2>
+                            <h2 style="color: #2e7d32;">Em busca de oportunidade como ${dados.vaga}</h2>
                             <p>Olá,</p>
                             <p>Este é um envio automático do currículo de <strong>${dados.nome}</strong>.</p>
                             <p>O sistema utilizado para este envio foi desenvolvido por mim como parte do meu <strong>portfólio Full Stack</strong>, utilizando Node.js, RabbitMQ e Microserviços.</p>

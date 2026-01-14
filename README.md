@@ -1,82 +1,164 @@
-# 🚀 Ecossistema de Recrutamento Automatizado (CV-Sender)
+# 📬 Ecosistema CV SMTP
 
-Este é um ecossistema robusto baseado em micro-serviços para gestão de candidaturas. Ele utiliza uma arquitetura orientada a eventos com **Node.js** e **RabbitMQ** para processar envios de currículos de forma assíncrona, garantindo alta disponibilidade e resiliência.
+Sistema automatizado para envio de currículos via e-mail utilizando **Node.js**, **RabbitMQ (AMQP)** e **SMTP (Nodemailer)**, com arquitetura baseada em **microserviços desacoplados**.
 
-
-
-## 🛠️ Tecnologias Utilizadas
-
-* **Runtime:** Node.js (v18+)
-* **Framework Web:** Express.js
-* **Mensageria:** RabbitMQ (via CloudAMQP)
-* **Uploads:** Multer
-* **E-mail:** Nodemailer
-* **Testes:** Jest & Supertest
+Projeto desenvolvido como parte de portfólio Full Stack, demonstrando mensageria, filas persistentes, workers assíncronos e logging distribuído.
 
 ---
 
-## 🏗️ Arquitetura do Sistema
+## 🧱 Arquitetura
 
-O sistema é dividido em três componentes principais que operam de forma independente:
+O ecossistema é composto por três processos independentes:
 
-1.  **Server (API):** Recebe o formulário e o arquivo PDF, valida os dados e coloca uma mensagem na fila `fila_envios`.
-2.  **Worker-Sender:** Consome as mensagens da fila e realiza o envio real do e-mail com anexo.
-3.  **Logger:** Monitora a fila para registrar cada evento de sucesso em um relatório persistente e dashboard HTML.
+- **Servidor Web (Dashboard)**
+  - Recebe os currículos via formulário
+  - Enfileira as mensagens no RabbitMQ
+
+- **Worker SMTP**
+  - Consome a fila de envios
+  - Dispara e-mails HTML profissionais com anexo
+
+- **Logger**
+  - Registra eventos de envio
+  - Persiste histórico para visualização no Dashboard
+
+```
+[ Cliente ] → [ Express ] → [ RabbitMQ ] → [ Worker SMTP ]
+                                      ↘︎ [ Logger ]
+```
 
 ---
 
-## 🧪 Estratégia de Testes
+## 🚀 Requisitos
 
-O projeto conta com uma suíte de testes automatizados que garante a integridade de cada etapa do fluxo.
+- Node.js **18+**
+- NPM ou Yarn
+- Conta no **CloudAMQP** (ou RabbitMQ local)
+- Conta de e-mail SMTP (ex: Gmail)
 
-### Cobertura de Testes:
-* **Unitários:** Validação de rotas e middlewares.
-* **Integração:** Simulação de upload de arquivos reais e comunicação com Mock do RabbitMQ.
-* **Workers:** Validação da lógica de formatação de e-mails e anexos.
+---
 
-Para rodar os testes:
+## 📦 Instalação
+
+```bash
+git clone https://github.com/origemglobaltecnologia/ecossistema-cv.git
+cd ecosistema-cv-smtp
+npm install
+```
+
+---
+
+## ⚙️ Configuração do `.env`
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+# Mensageria (RabbitMQ / CloudAMQP)
+AMQP_URL=amqps://usuario:senha@host/vhost
+
+# Configurações SMTP (Gmail recomendado)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_USER=seu_email@gmail.com
+EMAIL_PASS=sua_senha_de_app
+
+# Servidor
+PORT=3000
+NODE_ENV=development
+```
+
+> ⚠️ **IMPORTANTE:**  
+> Para Gmail, utilize **Senha de App**, não a senha normal da conta.
+
+---
+
+## ▶️ Execução
+
+### 1️⃣ Iniciar o servidor (Dashboard)
+
+```bash
+npm start
+```
+
+Acesse:
+```
+http://localhost:3000
+```
+
+---
+
+### 2️⃣ Iniciar o Worker de Envio
+
+```bash
+npm run worker
+```
+
+---
+
+### 3️⃣ Iniciar o Logger
+
+```bash
+npm run logger
+```
+
+---
+
+## 📊 Monitoramento
+
+- Endpoint de status:
+```
+GET /status
+```
+
+- Histórico salvo em:
+```
+relatorio_envios.txt
+```
+
+---
+
+## 🧪 Testes
+
 ```bash
 npm test
+```
+
 ---
-🚀 Como Executar
-​1. Requisitos Próvios
-​Crie um arquivo .env na raiz com as seguintes chaves:
 
-PORT=3000
-AMQP_URL=sua_url_do_cloudamqp
-EMAIL_USER=seu-email@gmail.com
-EMAIL_PASS=sua-senha-de-app
-EMAIL_DESTINO=rh@empresa.com
+## 🔐 Segurança
 
-2. Instalação
-npm install
+O arquivo `.env` **não deve ser versionado**.
 
-3. Iniciando os Serviços
-​Recomenda-se abrir três terminais (ou abas no Termux):
-​Terminal 1 (Dashboard): npm start
-​Terminal 2 (Processador): npm run worker
-​Terminal 3 (Relatórios): npm run logger
-​🧹 Manutenção Automática
-​O sistema possui rotinas de higiene de arquivos:
-​A pasta uploads/ é limpa automaticamente toda vez que o servidor inicia.
-​Os arquivos temporários gerados durante os testes são removidos imediatamente após a execução da suíte de testes.
-​📈 Próximos Passos
-​[ ] Implementar Teste de Carga para medir latência da fila.
-​[ ] Adicionar suporte para armazenamento em nuvem (AWS S3) para os currículos.
-​[ ] Criar interface visual para monitoramento em tempo real dos workers.
-​© 2024 - Desenvolvido por [Cristiano/Origem Global Tecnologia]
+Adicione ao `.gitignore`:
 
-# --- Configuração do RabbitMQ (CloudAMQP ou Local) ---
-# Substitua pela sua URL completa fornecida pelo CloudAMQP
-AMQP_URL=amqps://usuario:senha@instancia.rmq.cloudamqp.com/vhost
+```
+.env
+uploads/*
+!uploads/.gitkeep
+```
 
-# --- Configuração de E-mail (Gmail) ---
-# Use 'smtp.gmail.com' para o Gmail
-EMAIL_HOST=smtp.gmail.com
-# Porta 465 recomendada para conexões seguras (SSL)
-EMAIL_PORT=465
-# Seu endereço de e-mail completo
-EMAIL_USER=seu-email@gmail.com
-# Senha de App gerada na sua conta Google (não use sua senha real)
-EMAIL_PASS=abcd efgh ijkl mnop
+---
 
+## 🧠 Tecnologias
+
+- Node.js
+- Express
+- RabbitMQ (AMQP)
+- Nodemailer (SMTP)
+- Multer
+- Jest
+- Supertest
+
+---
+
+## 👨‍💻 Autor
+
+**Cristiano Origem Camejo**  
+🌐 https://origemoficial.com.br  
+📂 https://github.com/origemglobaltecnologia
+
+---
+
+## 📜 Licença
+
+ISC

@@ -10,26 +10,6 @@ const app = express();
 /** Configuração do Multer: Define a pasta onde os currículos serão salvos temporariamente */
 const upload = multer({ dest: 'uploads/' });
 
-// --- MÓDULO DE MANUTENÇÃO ---
-/**
- * Realiza a limpeza da pasta de uploads no startup do servidor.
- * Remove arquivos residuais de sessões anteriores para economizar espaço.
- */
-const limparPastaUploads = () => {
-    const diretorio = path.join(__dirname, 'uploads');
-    if (fs.existsSync(diretorio)) {
-        fs.readdirSync(diretorio).forEach(arquivo => {
-            if (arquivo !== '.gitkeep') {
-                fs.unlinkSync(path.join(diretorio, arquivo));
-            }
-        });
-        if (process.env.NODE_ENV !== 'test') {
-            console.log('🧹 Manutenção: Pasta uploads limpa com sucesso.');
-        }
-    }
-};
-limparPastaUploads();
-
 // --- MIDDLEWARES ---
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public')); // Serve os arquivos estáticos do Dashboard (HTML/CSS/JS)
@@ -58,7 +38,6 @@ app.get('/status', (req, res) => {
 /**
  * POST /enviar
  * Processa o formulário de candidatura e despacha os dados para a fila do RabbitMQ.
- * Inclui lógica de pré-validação para suportar testes automatizados.
  */
 app.post('/enviar', (req, res) => {
     // Processamento assíncrono do arquivo via Multer
