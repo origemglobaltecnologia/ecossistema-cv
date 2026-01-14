@@ -51,7 +51,8 @@ app.post('/enviar', (req, res) => {
             return res.status(400).send('Erro: O arquivo de currículo é obrigatório.');
         }
 
-        const { nome, email, vaga } = req.body;
+        // CAPTURA DOS CAMPOS (Incluindo o novo campo 'candidato')
+        const { nome, email, vaga, candidato } = req.body;
 
         // Verificação de infraestrutura
         if (!CLOUD_AMQP_URL) {
@@ -65,28 +66,30 @@ app.post('/enviar', (req, res) => {
             await canal.assertQueue('fila_envios', { durable: true });
 
             // Preparação do payload para o Worker-Sender
+            // 'nome' continua sendo a Empresa para o Log
+            // 'candidato' vai para o corpo do e-mail
             const msg = JSON.stringify({
-                nome, 
-                email, 
-                vaga,
+                nome: nome, 
+                candidato: candidato || "Candidato", // Fallback caso venha vazio
+                email: email, 
+                vaga: vaga,
                 caminhoAnexo: path.resolve(req.file.path),
                 nomeAnexo: req.file.originalname
             });
 
-            // Envio persistente para garantir que a mensagem não se perca se o server cair
+            // Envio persistente para garantir que a mensagem não se perca
             canal.sendToQueue('fila_envios', Buffer.from(msg), { persistent: true });
 
-            // Fechamento gracioso da conexão após curto delay
+            // Fechamento gracioso da conexão
             setTimeout(async () => {
                 await conexao.close();
             }, 500);
 
-            // Resposta específica para o ambiente Jest/Test
             if (process.env.NODE_ENV === 'test') {
                 return res.status(200).json({ message: 'OK' });
             }
 
-            // Fluxo normal: Redireciona de volta para o Dashboard
+            // Redireciona de volta para o Dashboard
             res.redirect('/');
         } catch (error) {
             console.error('Falha crítica na conexão AMQP:', error.message);
@@ -103,6 +106,5 @@ const server = app.listen(PORT, () => {
     }
 });
 
-/** Exportação para uso na suíte de testes (Supertest) */
 module.exports = { app, server };
 
